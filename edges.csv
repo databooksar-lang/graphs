@@ -1,0 +1,7 @@
+﻿source,target,relation
+P1,T2,consumes
+P2,T1,consumes
+T1,C1,contains
+T2,C2,contains
+C1,R1,validated_by
+C2,R2,validated_by

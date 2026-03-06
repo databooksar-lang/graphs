@@ -1,0 +1,16 @@
+{
+  "interaction": {
+    "zoomView": true,
+    "navigationButtons": true,
+    "tooltipDelay": 200
+  },
+  "physics": {
+    "barnesHut": {
+      "gravitationalConstant": -6000,
+      "centralGravity": 0.3,
+      "springLength": 200,
+      "springConstant": 0.05
+    },
+    "minVelocity": 0.75
+  }
+}

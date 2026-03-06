@@ -1,0 +1,9 @@
+﻿id,label,type,criticality
+P1,Proceso_Facturacion,process,high
+P2,Proceso_Reportes,process,medium
+T1,Tabla_Clientes,table,high
+T2,Tabla_Ventas,table,high
+C1,Campo_Email,column,medium
+C2,Campo_Importe,column,medium
+R1,Regla_Email_NotNull,rule,high
+R2,Regla_Importe_Positive,rule,high

@@ -7,7 +7,7 @@ import streamlit.components.v1 as components
 
 st.set_page_config(layout="wide")
 
-st.title("Data Quality Graph Explorer")
+st.title("Visualizacion de Grafo con PyVis y Streamlit")
 
 # -----------------------------
 # Cargar CSV

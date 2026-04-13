@@ -44,8 +44,6 @@ def prepare_nodes(df):
 
     if "type" not in nodes.columns:
         nodes["type"] = "unknown"
-    if "criticality" not in nodes.columns:
-        nodes["criticality"] = "n/a"
 
     if "size" in nodes.columns:
         nodes["size"] = pd.to_numeric(nodes["size"], errors="coerce")
@@ -68,8 +66,11 @@ def prepare_edges(df):
 
     edges = df.copy().rename(columns={source_column: "src", target_column: "dst"})
 
-    if "relation" not in edges.columns:
-        edges["relation"] = "related_to"
+    if "relationship" not in edges.columns:
+        if "relation" in edges.columns:
+            edges = edges.rename(columns={"relation": "relationship"})
+        else:
+            edges["relationship"] = "related_to"
 
     return edges
 
@@ -117,17 +118,17 @@ except Exception as exc:
 
 st.sidebar.header("Filtros")
 
-relation_values = sorted(
-    [str(value) for value in edges_df["relation"].dropna().unique()]
+relationship_values = sorted(
+    [str(value) for value in edges_df["relationship"].dropna().unique()]
 )
 
-if relation_values:
+if relationship_values:
     relaciones = st.sidebar.multiselect(
         "Tipo de relacion",
-        relation_values,
-        default=relation_values,
+        relationship_values,
+        default=relationship_values,
     )
-    edges_filtered = edges_df[edges_df["relation"].astype(str).isin(relaciones)]
+    edges_filtered = edges_df[edges_df["relationship"].astype(str).isin(relaciones)]
 else:
     st.sidebar.info("No hay relaciones para filtrar")
     edges_filtered = edges_df.copy()
@@ -169,7 +170,7 @@ for _, row in edges_filtered.iterrows():
     G.add_edge(
         str(source),
         str(target),
-        relation=str(row.get("relation", "related_to")),
+        relationship=str(row.get("relationship", "related_to")),
     )
 
 if invalid_nodes > 0:
@@ -245,7 +246,7 @@ for source, target, data in G.edges(data=True):
     net.add_edge(
         source,
         target,
-        label=str(data.get("relation", "related_to")),
+        label=str(data.get("relationship", "related_to")),
     )
 
 

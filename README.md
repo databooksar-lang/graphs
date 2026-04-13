@@ -29,7 +29,10 @@ Compatibilidad:
 - Tambien se aceptan `source` y `target` (se normalizan internamente a `src` y `dst`).
 
 Columnas opcionales reconocidas:
-- `relation` (default: `related_to`)
+- `relationship` (default: `related_to`)
+
+Compatibilidad temporal:
+- Si el archivo trae `relation`, tambien se acepta y se normaliza a `relationship`.
 
 Si faltan columnas obligatorias de aristas, la app muestra error y detiene la ejecucion.
 
@@ -37,7 +40,7 @@ Si faltan columnas obligatorias de aristas, la app muestra error y detiene la ej
 
 - Nodos sin `id` o `label` se omiten.
 - Aristas sin `src` o `dst` se omiten.
-- El filtro lateral de relaciones se muestra cuando hay valores de `relation`.
+- El filtro lateral de relaciones se muestra cuando hay valores de `relationship`.
 - Si existe `type`, los nodos usan color por tipo.
 - Si no existe `type`, todos los nodos usan un unico color por defecto.
 

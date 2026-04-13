@@ -13,8 +13,8 @@ st.title("Visualizacion de Grafo con PyVis y Streamlit")
 # Cargar CSV
 # -----------------------------
 
-nodes_df = pd.read_csv("nodes.csv")
-edges_df = pd.read_csv("edges.csv")
+nodes_df = pd.read_csv("./data/nodes.csv")
+edges_df = pd.read_csv("./data/edges.csv")
 
 # -----------------------------
 # Cargar opciones del grafo

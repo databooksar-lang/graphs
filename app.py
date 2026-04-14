@@ -185,7 +185,7 @@ if invalid_edges > 0:
 
 MAX_NODES = st.sidebar.number_input(
     "Limite de nodos a mostrar",
-    min_value=10,
+    min_value=0,
     max_value=5000,
     value=min(500, G.number_of_nodes()),
     step=50,

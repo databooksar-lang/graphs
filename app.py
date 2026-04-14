@@ -180,6 +180,26 @@ if invalid_edges > 0:
     st.warning(f"Se omitieron {invalid_edges} aristas por src/dst faltante")
 
 # -----------------------------
+# Limitar grafo antes de renderizar
+# -----------------------------
+
+MAX_NODES = st.sidebar.number_input(
+    "Limite de nodos a mostrar",
+    min_value=10,
+    max_value=5000,
+    value=min(500, G.number_of_nodes()),
+    step=50,
+)
+
+if G.number_of_nodes() > MAX_NODES:
+    limited_nodes = list(G.nodes())[:MAX_NODES]
+    G = G.subgraph(limited_nodes).copy()
+    st.info(
+        f"Grafo limitado a {MAX_NODES} nodos para mejor rendimiento "
+        f"({G.number_of_nodes()} nodos, {G.number_of_edges()} aristas)."
+    )
+
+# -----------------------------
 # Visualización PyVis
 # -----------------------------
 
@@ -246,7 +266,7 @@ for source, target, data in G.edges(data=True):
     net.add_edge(
         source,
         target,
-        label=str(data.get("relationship", "related_to")),
+        title=str(data.get("relationship", "related_to")),
     )
 
 

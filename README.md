@@ -44,6 +44,23 @@ Si faltan columnas obligatorias de aristas, la app muestra error y detiene la ej
 - Si existe `type`, los nodos usan color por tipo.
 - Si no existe `type`, todos los nodos usan un unico color por defecto.
 
+## Colores por tipo
+
+El color del nodo se define en `color_map` dentro de `app.py`.
+
+Tipos incluidos actualmente:
+- `data_system`
+- `object`
+- `field`
+- `process`
+- `table`
+- `column`
+- `rule`
+
+Si aparece un valor de `type` que no este en `color_map`, la app muestra una advertencia y usa el color por defecto `#808080`.
+
+Para agregar un tipo nuevo, alcanza con sumar una entrada en `color_map`.
+
 ## Ejemplo minimo
 
 `nodes.csv`

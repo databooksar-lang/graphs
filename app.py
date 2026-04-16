@@ -191,8 +191,24 @@ MAX_NODES = st.sidebar.number_input(
     step=50,
 )
 
+original_edges = G.number_of_edges()
+
+if original_edges == 0:
+    st.warning(
+        "El grafo no tiene aristas con los filtros actuales. "
+        "Prueba ajustar el filtro de relaciones."
+    )
+
 if G.number_of_nodes() > MAX_NODES:
-    limited_nodes = list(G.nodes())[:MAX_NODES]
+    # Priorizar nodos conectados y completar con aislados solo si hace falta.
+    nodes_with_edges = [node for node in G.nodes() if G.degree(node) > 0]
+    isolated_nodes = [node for node in G.nodes() if G.degree(node) == 0]
+
+    limited_nodes = nodes_with_edges[:MAX_NODES]
+    remaining_capacity = MAX_NODES - len(limited_nodes)
+    if remaining_capacity > 0:
+        limited_nodes.extend(isolated_nodes[:remaining_capacity])
+
     G = G.subgraph(limited_nodes).copy()
     st.info(
         f"Grafo limitado a {MAX_NODES} nodos para mejor rendimiento "
@@ -216,6 +232,9 @@ net.set_options(json.dumps(options))
 # -----------------------------
 
 color_map = {
+    "data_system": "#e74c3c",
+    "object": "#3498db",
+    "field": "#2ecc71",
     "process": "#ff6b6b",
     "table": "#4dabf7",
     "column": "#51cf66",
@@ -223,11 +242,23 @@ color_map = {
 }
 
 size_map = {
+    "data_system": 40,
+    "object": 32,
+    "field": 24,
     "process": 35,
     "table": 30,
     "column": 25,
     "rule": 20
 }
+
+if has_type_column:
+    present_types = {str(node_data.get("type", "unknown")) for _, node_data in G.nodes(data=True)}
+    unmapped_types = sorted(node_type for node_type in present_types if node_type not in color_map)
+    if unmapped_types:
+        st.warning(
+            "Hay tipos de nodo sin color definido: "
+            f"{', '.join(unmapped_types)}. Se usara {DEFAULT_NODE_COLOR} para esos casos."
+        )
 
 # -----------------------------
 # agregar nodos

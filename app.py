@@ -5,6 +5,9 @@ from pyvis.network import Network
 import json
 import streamlit.components.v1 as components
 import os
+import plotly.graph_objects as go
+from scipy.spatial.distance import pdist, squareform
+import numpy as np
 
 
 REQUIRED_NODE_COLUMNS = {"id", "label"}
@@ -168,6 +171,9 @@ st.markdown("""
 # -----------------------------
 
 selected_graph = st.sidebar.selectbox("Seleccionar grafo", available_graphs, index=0)
+
+# Seleccionar tipo de visualización
+visualization_type = st.sidebar.radio("Tipo de visualización", ["2D (PyVis)", "3D (Plotly)"], index=0)
 
 # -----------------------------
 # Cargar CSV del grafo seleccionado
@@ -398,12 +404,99 @@ for source, target, data in G.edges(data=True):
 
 
 # -----------------------------
-# mostrar grafo
+# Generar visualización 3D con Plotly
 # -----------------------------
 
-net.save_graph("graph.html")
+def generate_3d_graph(G, color_map, size_map, DEFAULT_NODE_COLOR, has_type_column):
+    # Usar layout con posiciones 3D
+    pos_3d = {}
+    
+    # Aplicar un layout spring 3D
+    pos_2d = nx.spring_layout(G, k=2, iterations=50, seed=42)
+    
+    # Asignar coordenadas Z aleatorias
+    np.random.seed(42)
+    for node in G.nodes():
+        pos_3d[node] = [pos_2d[node][0], pos_2d[node][1], np.random.uniform(-1, 1)]
+    
+    # Extraer coordenadas
+    x_coords = [pos_3d[node][0] for node in G.nodes()]
+    y_coords = [pos_3d[node][1] for node in G.nodes()]
+    z_coords = [pos_3d[node][2] for node in G.nodes()]
+    
+    # Crear aristas
+    edge_x, edge_y, edge_z = [], [], []
+    for source, target in G.edges():
+        edge_x.extend([pos_3d[source][0], pos_3d[target][0], None])
+        edge_y.extend([pos_3d[source][1], pos_3d[target][1], None])
+        edge_z.extend([pos_3d[source][2], pos_3d[target][2], None])
+    
+    # Extraer información de nodos
+    node_labels = [str(G.nodes[node].get("label", node)) for node in G.nodes()]
+    node_types = [str(G.nodes[node].get("type", "unknown")) for node in G.nodes()]
+    node_colors = [
+        color_map.get(node_type, DEFAULT_NODE_COLOR) if has_type_column else DEFAULT_NODE_COLOR
+        for node_type in node_types
+    ]
+    node_sizes = [safe_node_size(G.nodes[node], size_map) for node in G.nodes()]
+    
+    # Crear figura
+    fig = go.Figure(data=[
+        go.Scatter3d(
+            x=edge_x,
+            y=edge_y,
+            z=edge_z,
+            mode="lines",
+            line=dict(color="rgba(125,125,125,0.2)", width=1),
+            hoverinfo="none",
+            name=""
+        ),
+        go.Scatter3d(
+            x=x_coords,
+            y=y_coords,
+            z=z_coords,
+            mode="markers+text",
+            text=node_labels,
+            textposition="top center",
+            hovertext=node_labels,
+            hoverinfo="text",
+            marker=dict(
+                size=8,
+                color=node_colors,
+                line=dict(color="white", width=1),
+                opacity=0.8
+            ),
+            name="Nodos"
+        )
+    ])
+    
+    fig.update_layout(
+        title="Visualización 3D del Grafo",
+        scene=dict(
+            xaxis=dict(showgrid=False, zeroline=False),
+            yaxis=dict(showgrid=False, zeroline=False),
+            zaxis=dict(showgrid=False, zeroline=False),
+        ),
+        hovermode="closest",
+        margin=dict(b=0, l=0, r=0, t=40),
+        height=750
+    )
+    
+    return fig
 
-with open("graph.html","r",encoding="utf-8") as f:
-    html = f.read()
 
-components.html(html,height=750)
+# Generar gráfico 3D
+if visualization_type == "3D (Plotly)":
+    fig_3d = generate_3d_graph(G, color_map, size_map, DEFAULT_NODE_COLOR, has_type_column)
+
+# -----------------------------
+# mostrar grafo
+# ----------------------------- 
+
+if visualization_type == "2D (PyVis)":
+    net.save_graph("graph.html")
+    with open("graph.html","r",encoding="utf-8") as f:
+        html = f.read()
+    components.html(html,height=750)
+else:  # 3D
+    st.plotly_chart(fig_3d, width='stretch')

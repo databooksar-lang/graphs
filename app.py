@@ -4,12 +4,33 @@ import networkx as nx
 from pyvis.network import Network
 import json
 import streamlit.components.v1 as components
+import os
 
 
 REQUIRED_NODE_COLUMNS = {"id", "label"}
 EDGE_SOURCE_ALIASES = ["src", "source"]
 EDGE_TARGET_ALIASES = ["dst", "target"]
 DEFAULT_NODE_COLOR = "#808080"
+
+
+# Obtener lista de grafos disponibles
+data_dir = "./data"
+if os.path.exists(data_dir):
+    available_graphs = []
+    for item in os.listdir(data_dir):
+        item_path = os.path.join(data_dir, item)
+        if os.path.isdir(item_path):
+            nodes_path = os.path.join(item_path, "nodes.csv")
+            edges_path = os.path.join(item_path, "edges.csv")
+            if os.path.exists(nodes_path) and os.path.exists(edges_path):
+                available_graphs.append(item)
+    available_graphs.sort()
+else:
+    available_graphs = []
+
+if not available_graphs:
+    st.error("No se encontraron grafos válidos en la carpeta data. Cada grafo debe tener una subcarpeta con nodes.csv y edges.csv.")
+    st.stop()
 
 
 def find_first_existing_column(df, candidates):
@@ -143,11 +164,17 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -----------------------------
-# Cargar CSV
+# Seleccionar grafo
 # -----------------------------
 
-nodes_df = load_csv_or_stop("./data/nodes.csv")
-edges_df = load_csv_or_stop("./data/edges.csv")
+selected_graph = st.sidebar.selectbox("Seleccionar grafo", available_graphs, index=0)
+
+# -----------------------------
+# Cargar CSV del grafo seleccionado
+# -----------------------------
+
+nodes_df = load_csv_or_stop(f"./data/{selected_graph}/nodes.csv")
+edges_df = load_csv_or_stop(f"./data/{selected_graph}/edges.csv")
 
 has_type_column = "type" in nodes_df.columns
 

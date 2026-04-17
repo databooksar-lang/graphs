@@ -21,7 +21,7 @@ def find_first_existing_column(df, candidates):
 
 def load_csv_or_stop(path):
     try:
-        return pd.read_csv(path)
+        return pd.read_csv(path, sep=';')
     except FileNotFoundError:
         st.error(f"No se encontro el archivo requerido: {path}")
         st.stop()
@@ -85,9 +85,62 @@ def safe_node_size(node_data, default_by_type, default_size=20):
     return default_by_type.get(node_type, default_size)
 
 
-st.set_page_config(layout="wide")
+st.set_page_config(
+    layout="wide",
+    page_title="Visualización de Grafos",
+    page_icon="🌐"
+)
 
-st.title("Visualizacion de Grafo con PyVis y Streamlit")
+# Estilos personalizados
+st.markdown("""
+<style>
+    .main-header {
+        font-size: 2.5em;
+        color: #2c3e50;
+        text-align: center;
+        margin-bottom: 20px;
+        font-weight: bold;
+    }
+    .description {
+        font-size: 1.2em;
+        color: #34495e;
+        text-align: center;
+        margin-bottom: 30px;
+        line-height: 1.6;
+    }
+    .sidebar .sidebar-content {
+        background-color: #f8f9fa;
+        padding: 20px;
+        border-radius: 10px;
+    }
+    .stButton>button {
+        background-color: #3498db;
+        color: white;
+        border-radius: 5px;
+        border: none;
+        padding: 10px 20px;
+        font-size: 16px;
+    }
+    .stButton>button:hover {
+        background-color: #2980b9;
+    }
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #ecf0f1;
+    }
+    .stAlert {
+        border-radius: 10px;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+st.markdown('<h1 class="main-header">🌐 Visualización de Grafos Interactivos</h1>', unsafe_allow_html=True)
+st.markdown("""
+<div class="description">
+    Explora relaciones complejas entre entidades a través de una visualización de grafo interactiva.
+    Utiliza los filtros en la barra lateral para personalizar la vista y descubrir conexiones ocultas.
+</div>
+""", unsafe_allow_html=True)
 
 # -----------------------------
 # Cargar CSV
@@ -100,6 +153,36 @@ has_type_column = "type" in nodes_df.columns
 
 nodes_df = prepare_nodes(nodes_df)
 edges_df = prepare_edges(edges_df)
+
+# -----------------------------
+# Preparar colores y tamaños
+# -----------------------------
+
+if has_type_column:
+    unique_types = sorted(nodes_df['type'].dropna().unique())
+    color_palette = [
+        "#e74c3c", "#3498db", "#2ecc71", "#ff6b6b", "#4dabf7", "#51cf66", "#fab005",
+        "#fd7e14", "#6f42c1", "#20c997", "#dc3545", "#ffc107", "#17a2b8", "#28a745",
+        "#007bff", "#6c757d", "#343a40", "#f8f9fa"
+    ]
+    color_map = {type_: color_palette[i % len(color_palette)] for i, type_ in enumerate(unique_types)}
+    default_node_size = 30
+    size_map = {type_: default_node_size for type_ in unique_types}
+else:
+    color_map = {}
+    size_map = {}
+    unique_types = []
+
+# -----------------------------
+# Configuración del tooltip
+# -----------------------------
+
+tooltip_options = [col for col in nodes_df.columns if col not in ['id', 'label']]
+selected_tooltip_fields = st.sidebar.multiselect(
+    "Campos a mostrar en el tooltip",
+    tooltip_options,
+    default=['type', 'description'] if 'type' in tooltip_options and 'description' in tooltip_options else tooltip_options[:2]
+)
 
 # -----------------------------
 # Cargar opciones del grafo
@@ -116,7 +199,7 @@ except Exception as exc:
 # Filtro de relaciones
 # -----------------------------
 
-st.sidebar.header("Filtros")
+st.sidebar.header("🎛️ Filtros y Configuración")
 
 relationship_values = sorted(
     [str(value) for value in edges_df["relationship"].dropna().unique()]
@@ -124,7 +207,7 @@ relationship_values = sorted(
 
 if relationship_values:
     relaciones = st.sidebar.multiselect(
-        "Tipo de relacion",
+        "Tipo de relación",
         relationship_values,
         default=relationship_values,
     )
@@ -155,6 +238,12 @@ for _, row in nodes_df.iterrows():
         type=str(row.get("type", "unknown")),
         criticality=str(row.get("criticality", "n/a")),
         size=row.get("size", pd.NA),
+        category=str(row.get("category", "")),
+        description=str(row.get("description", "")),
+        power_level=str(row.get("power_level", "")),
+        origin=str(row.get("origin", "")),
+        status=str(row.get("status", "")),
+        tags=str(row.get("tags", "")),
     )
 
 # agregar edges
@@ -184,12 +273,21 @@ if invalid_edges > 0:
 # -----------------------------
 
 MAX_NODES = st.sidebar.number_input(
-    "Limite de nodos a mostrar",
+    "Límite de nodos a mostrar",
     min_value=0,
     max_value=5000,
     value=min(500, G.number_of_nodes()),
     step=50,
 )
+
+# -----------------------------
+# Personalización de colores
+# -----------------------------
+
+if has_type_column:
+    st.sidebar.header("🎨 Personalización de Colores")
+    for type_ in unique_types:
+        color_map[type_] = st.sidebar.color_picker(f"Color para {type_}", value=color_map[type_])
 
 original_edges = G.number_of_edges()
 
@@ -228,39 +326,6 @@ net = Network(
 net.set_options(json.dumps(options))
 
 # -----------------------------
-# tamanos por tipo
-# -----------------------------
-
-color_map = {
-    "data_system": "#e74c3c",
-    "object": "#3498db",
-    "field": "#2ecc71",
-    "process": "#ff6b6b",
-    "table": "#4dabf7",
-    "column": "#51cf66",
-    "rule": "#fab005",
-}
-
-size_map = {
-    "data_system": 40,
-    "object": 32,
-    "field": 24,
-    "process": 35,
-    "table": 30,
-    "column": 25,
-    "rule": 20
-}
-
-if has_type_column:
-    present_types = {str(node_data.get("type", "unknown")) for _, node_data in G.nodes(data=True)}
-    unmapped_types = sorted(node_type for node_type in present_types if node_type not in color_map)
-    if unmapped_types:
-        st.warning(
-            "Hay tipos de nodo sin color definido: "
-            f"{', '.join(unmapped_types)}. Se usara {DEFAULT_NODE_COLOR} para esos casos."
-        )
-
-# -----------------------------
 # agregar nodos
 # -----------------------------
 
@@ -276,16 +341,20 @@ for node, data in G.nodes(data=True):
         else DEFAULT_NODE_COLOR
     )
 
+    # Construir el tooltip dinámicamente
+    title_lines = [f"Label: {node_label}"]
+    for field in selected_tooltip_fields:
+        value = str(data.get(field, ""))
+        if value.strip():  # Solo incluir si tiene valor
+            title_lines.append(f"{field.capitalize()}: {value}")
+    title = "\n".join(title_lines)
+
     net.add_node(
         node,
         label=node_label,
         color=node_color,
         size=node_size,
-        title=f"""
-        Label: {node_label} <br>
-        Tipo: {node_type} <br>
-        Criticalidad: {node_criticality}
-        """
+        title=title
     )
 
 # -----------------------------
